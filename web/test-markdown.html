@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TinyRag - Markdown 渲染测试</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+  <style>
+    .test-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .test-section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: rgba(0, 0, 0, 0.1) 0 2px 10px;
+    }
+    .test-title {
+      font-size: 1.5em;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #0071e3;
+    }
+    .test-input {
+      width: 100%;
+      min-height: 150px;
+      padding: 12px;
+      margin-bottom: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      resize: vertical;
+    }
+    .test-output {
+      padding: 16px;
+      background: #f5f5f7;
+      border-radius: 8px;
+      min-height: 100px;
+    }
+    .test-button {
+      background: #0071e3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .test-button:hover {
+      background: #0077ed;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1 style="text-align: center; margin: 40px 0;">TinyRag Markdown 渲染测试</h1>
+    
+    <div class="test-section">
+      <h2 class="test-title">实时测试</h2>
+      <textarea id="markdown-input" class="test-input" placeholder="在这里输入 Markdown 内容..."></textarea>
+      <button class="test-button" onclick="renderTest()">渲染</button>
+      <div id="markdown-output" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">标题测试</h2>
+      <div id="heading-test" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">文本格式测试</h2>
+      <div id="text-format-test" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">列表测试</h2>
+      <div id="list-test" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">代码块测试</h2>
+      <div id="code-test" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">引用测试</h2>
+      <div id="blockquote-test" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">链接和图片测试</h2>
+      <div id="link-image-test" class="test-output message-content"></div>
+    </div>
+
+    <div class="test-section">
+      <h2 class="test-title">表格测试</h2>
+      <div id="table-test" class="test-output message-content"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/html.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
+  <script>
+    if (typeof marked !== "undefined" && typeof hljs !== "undefined") {
+      marked.setOptions({
+        highlight: function (code, lang) {
+          if (lang && hljs.getLanguage(lang)) {
+            try {
+              return hljs.highlight(code, { language: lang }).value;
+            } catch (err) {}
+          }
+          return hljs.highlightAuto(code).value;
+        },
+        breaks: true,
+        gfm: true
+      });
+    }
+
+    function renderMarkdown(content) {
+      if (!content) return "";
+      
+      try {
+        if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+          const html = marked.parse(content);
+          return DOMPurify.sanitize(html);
+        }
+      } catch (err) {
+        console.error("Markdown 渲染失败:", err);
+      }
+      
+      return content.replace(/\n/g, '<br>');
+    }
+
+    function renderTest() {
+      const input = document.getElementById('markdown-input').value;
+      const output = document.getElementById('markdown-output');
+      output.innerHTML = renderMarkdown(input);
+      if (typeof hljs !== "undefined") {
+        output.querySelectorAll('pre code').forEach((block) => {
+          hljs.highlightElement(block);
+        });
+      }
+    }
+
+    const testCases = {
+      headings: `# 一级标题 (H1)
+## 二级标题 (H2)
+### 三级标题 (H3)
+#### 四级标题 (H4)
+##### 五级标题 (H5)
+###### 六级标题 (H6)`,
+      
+      textFormat: `这是**粗体文本**，这是*斜体文本*，这是***粗斜体文本***。
+
+这是~~删除线文本~~。
+
+这是行内代码：\`console.log('Hello, World!')\``,
+      
+      lists: `### 无序列表
+- 项目一
+- 项目二
+  - 子项目 A
+  - 子项目 B
+- 项目三
+
+### 有序列表
+1. 第一步
+2. 第二步
+   1. 子步骤 1
+   2. 子步骤 2
+3. 第三步`,
+      
+      code: `### 行内代码
+使用 \`print()\` 函数输出内容。
+
+### Python 代码块
+\`\`\`python
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+for i in range(10):
+    print(fibonacci(i))
+\`\`\`
+
+### JavaScript 代码块
+\`\`\`javascript
+function greet(name) {
+    const message = \`Hello, \${name}!\`;
+    console.log(message);
+    return message;
+}
+
+greet('World');
+\`\`\``,
+      
+      blockquote: `> 这是一个单行引用。
+
+> 这是一个多行引用。
+> 第二行继续引用。
+> 
+> 引用中可以包含其他 Markdown 元素：
+> - 列表项
+> - **粗体**
+> - \`代码\``,
+      
+      linkImage: `### 链接
+访问 [TinyRag GitHub](https://github.com) 了解更多。
+
+### 图片
+![示例图片](https://via.placeholder.com/400x200/0071e3/ffffff?text=TinyRag+Markdown+Test)`,
+      
+      table: `### 简单表格
+| 姓名 | 年龄 | 城市 |
+|------|------|------|
+| 张三 | 25 | 北京 |
+| 李四 | 30 | 上海 |
+| 王五 | 28 | 广州 |
+
+### 对齐表格
+| 左对齐 | 居中对齐 | 右对齐 |
+|:-------|:-------:|-------:|
+| 内容1 | 内容2 | 内容3 |
+| 更长的内容 | 居中 | 右对齐 |`
+    };
+
+    function runAllTests() {
+      document.getElementById('heading-test').innerHTML = renderMarkdown(testCases.headings);
+      document.getElementById('text-format-test').innerHTML = renderMarkdown(testCases.textFormat);
+      document.getElementById('list-test').innerHTML = renderMarkdown(testCases.lists);
+      document.getElementById('code-test').innerHTML = renderMarkdown(testCases.code);
+      document.getElementById('blockquote-test').innerHTML = renderMarkdown(testCases.blockquote);
+      document.getElementById('link-image-test').innerHTML = renderMarkdown(testCases.linkImage);
+      document.getElementById('table-test').innerHTML = renderMarkdown(testCases.table);
+      
+      document.querySelectorAll('.test-output').forEach((output) => {
+        if (typeof hljs !== "undefined") {
+          output.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightElement(block);
+          });
+        }
+      });
+    }
+
+    window.onload = function() {
+      runAllTests();
+    };
+  </script>
+</body>
+</html>

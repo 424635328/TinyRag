@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TinyRag - Chat</title>
+  <link rel="stylesheet" href="/assets/chat.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="bg-gradient"></div>
+    
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="app-logo">
+          <div class="logo-icon"></div>
+          <h1>TinyRag</h1>
+        </div>
+        <p class="app-subtitle">沉浸式知识库对话</p>
+      </div>
+
+      <div class="info-block">
+        <p class="panel-label">运行状态</p>
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span id="chat-provider">Loading...</span>
+        </div>
+        <p id="health-path" class="health-text">正在读取知识库路径...</p>
+      </div>
+
+      <div class="info-block">
+        <p class="panel-label">会话控制</p>
+        <div class="session-controls">
+          <label class="debug-toggle">
+            <input id="debug-mode" type="checkbox" />
+            <span>显示调试信息</span>
+          </label>
+          <button id="new-session" type="button" class="glass-button">
+            新会话
+          </button>
+        </div>
+        <p class="hint-text">
+          当前会记住最近几轮问答，并尝试解析"他 / 这个 / 上述对象"等指代。
+        </p>
+      </div>
+
+      <div class="info-block">
+        <p class="panel-label">快捷问题</p>
+        <div class="suggestions">
+          <button type="button" class="suggestion" data-question="出差打车能报销多少钱？">
+            出差打车能报销多少钱？
+          </button>
+          <button type="button" class="suggestion" data-question="晚上加班到十点有饭补吗？">
+            晚上加班到十点有饭补吗？
+          </button>
+          <button type="button" class="suggestion" data-question="Tony喜欢吃什么？">
+            Tony喜欢吃什么？
+          </button>
+          <button type="button" class="suggestion" data-question="公司的年假怎么算？">
+            公司的年假怎么算？
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <main class="chat-main">
+      <div class="chat-header">
+        <div class="header-content">
+          <h2 class="chat-title">与你的知识库对话</h2>
+          <p class="chat-subtitle">支持多轮上下文和证据展示</p>
+        </div>
+      </div>
+
+      <div id="messages" class="messages" aria-live="polite">
+        <article class="message message-assistant">
+          <div class="message-avatar">AI</div>
+          <div class="message-wrapper">
+            <p class="message-role">Assistant</p>
+            <div class="message-content">
+              <p>欢迎使用 TinyRag！我可以帮你回答关于你本地知识库的问题。</p>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="chat-input-area">
+        <form id="chat-form" class="chat-form">
+          <label class="sr-only" for="question">问题</label>
+          <div class="input-wrapper">
+            <textarea
+              id="question"
+              name="question"
+              rows="1"
+              maxlength="2000"
+              placeholder="输入一个和知识库相关的问题..."
+              required
+            ></textarea>
+            <button type="submit" class="send-button" aria-label="发送">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="input-footer">
+            <p id="status" class="status-text">等待提问。</p>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/css.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/html.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.11/dist/purify.min.js"></script>
+  <script src="/assets/chat.js"></script>
+</body>
+</html>
