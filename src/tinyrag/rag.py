@@ -398,7 +398,7 @@ def _extract_search_terms(text: str) -> List[str]:
 
     def add_term(term: str):
         cleaned = term.strip().lower()
-        if len(cleaned) < 2 or cleaned in seen:
+        if len(cleaned) < 2 or cleaned in seen or cleaned in GENERIC_TERMS:
             return
         seen.add(cleaned)
         terms.append(cleaned)
@@ -652,7 +652,7 @@ def _semantic_match_documents(queries: Sequence[str], retriever, limit: int):
 
 
 def _filter_low_score_threshold() -> int:
-    return 12
+    return 18
 
 
 def _is_text_document(doc: Document) -> bool:
@@ -675,23 +675,42 @@ def _has_keyword_match(terms: Sequence[str], text: str) -> bool:
     return False
 
 
+def _count_keyword_matches(terms: Sequence[str], text: str) -> int:
+    if not terms:
+        return 0
+    lowered = text.lower()
+    count = 0
+    for term in terms:
+        if term in lowered:
+            count += 1
+    return count
+
+
 def _is_doc_relevant(terms: Sequence[str], doc: Document) -> bool:
     if not terms:
         return True
     
     text = doc.page_content.lower()
     
+    match_count = 0
     for term in terms:
         if term in text:
-            return True
+            match_count += 1
+    
+    if match_count >= 1:
+        return True
     
     if _is_structured_document(doc):
         structured_values = doc.metadata.get("structured_values", [])
+        struct_match_count = 0
         for value in structured_values:
             value_lower = str(value).lower()
             for term in terms:
                 if term in value_lower:
-                    return True
+                    struct_match_count += 1
+                    break
+        if struct_match_count >= 1:
+            return True
     
     return False
 
@@ -700,16 +719,21 @@ def _should_include_structured_doc(terms: Sequence[str], doc: Document, score: i
     if not _is_structured_document(doc):
         return True
     
-    if score < 20:
+    if score < 35:
         return False
     
-    if _has_keyword_match(terms, doc.page_content):
+    keyword_match_count = _count_keyword_matches(terms, doc.page_content)
+    if keyword_match_count >= 1:
         return True
     
     structured_values = doc.metadata.get("structured_values", [])
+    struct_keyword_count = 0
     for value in structured_values:
-        if _has_keyword_match(terms, str(value)):
-            return True
+        if _count_keyword_matches(terms, str(value)) >= 1:
+            struct_keyword_count += 1
+    
+    if struct_keyword_count >= 1:
+        return True
     
     return False
 
@@ -856,6 +880,37 @@ def _select_structured_field(question: str, docs: Sequence[Document]) -> Tuple[O
 def _direct_structured_answer(question: str, docs: Sequence[Document]) -> Optional[str]:
     doc, field_name, value = _select_structured_field(question, docs)
     if not doc or not field_name or not value:
+        return None
+    
+    question_terms = _extract_search_terms(question)
+    
+    if not question_terms:
+        return None
+    
+    record = doc.metadata.get("structured_record", {})
+    if not record:
+        return None
+    
+    has_entity_match = False
+    for term in question_terms:
+        for field_val in record.values():
+            val_str = _stringify_value(field_val).lower()
+            if term in val_str:
+                has_entity_match = True
+                break
+        if has_entity_match:
+            break
+    
+    if not has_entity_match:
+        return None
+    
+    has_field_match = False
+    for term in question_terms:
+        if term in field_name.lower():
+            has_field_match = True
+            break
+    
+    if not has_field_match:
         return None
 
     entity = _extract_question_entity(question) or _extract_referenced_entity(question, [doc]) or "该对象"

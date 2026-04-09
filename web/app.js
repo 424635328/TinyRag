@@ -1,446 +1,221 @@
-const form = document.getElementById("chat-form");
-const input = document.getElementById("question");
-const statusText = document.getElementById("status");
-const messages = document.getElementById("messages");
-const suggestionButtons = document.querySelectorAll(".suggestion");
-const submitButton = form.querySelector('button[type="submit"]');
-const providerBadge = document.getElementById("provider-badge");
-const runtimeBadge = document.getElementById("runtime-badge");
-const healthPath = document.getElementById("health-path");
-const debugMode = document.getElementById("debug-mode");
-const newSessionButton = document.getElementById("new-session");
-
-let isStreaming = false;
-let currentSessionId = loadSessionId();
-
-if (typeof marked !== "undefined" && typeof hljs !== "undefined") {
-  marked.setOptions({
-    highlight: function (code, lang) {
-      if (lang && hljs.getLanguage(lang)) {
-        try {
-          return hljs.highlight(code, { language: lang }).value;
-        } catch (err) {}
+// 等待 DOM 加载完成
+document.addEventListener('DOMContentLoaded', function() {
+  // 导航栏滚动效果
+  const navbar = document.querySelector('.navbar');
+  if (navbar) {
+    window.addEventListener('scroll', function() {
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
       }
-      return hljs.highlightAuto(code).value;
-    },
-    breaks: true,
-    gfm: true
-  });
-}
-
-function renderMarkdown(content) {
-  if (!content) return "";
-  
-  try {
-    if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
-      const html = marked.parse(content);
-      return DOMPurify.sanitize(html);
-    }
-  } catch (err) {
-    console.error("Markdown 渲染失败:", err);
-  }
-  
-  return escapeHtml(content).replace(/\n/g, '<br>');
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function createSessionId() {
-  if (window.crypto && typeof window.crypto.randomUUID === "function") {
-    return window.crypto.randomUUID();
-  }
-  return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function loadSessionId() {
-  const existing = window.localStorage.getItem("tinyrag_session_id");
-  if (existing) {
-    return existing;
-  }
-  const created = createSessionId();
-  window.localStorage.setItem("tinyrag_session_id", created);
-  return created;
-}
-
-function saveSessionId(sessionId) {
-  currentSessionId = sessionId;
-  window.localStorage.setItem("tinyrag_session_id", sessionId);
-}
-
-function createMessage(role, content) {
-  const article = document.createElement("article");
-  article.className = `message message-${role}`;
-
-  const roleText = document.createElement("p");
-  roleText.className = "message-role";
-  roleText.textContent = role === "user" ? "You" : "Assistant";
-
-  const body = document.createElement("div");
-  body.className = "message-content";
-  if (content) {
-    if (role === "assistant") {
-      body.innerHTML = renderMarkdown(content);
-    } else {
-      body.textContent = content;
-    }
-  }
-
-  const meta = document.createElement("div");
-  meta.className = "message-meta";
-
-  article.append(roleText, body, meta);
-  messages.appendChild(article);
-  messages.scrollTop = messages.scrollHeight;
-  
-  if (typeof hljs !== "undefined") {
-    body.querySelectorAll('pre code').forEach((block) => {
-      hljs.highlightElement(block);
     });
   }
+
+  // 移动端菜单
+  const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+  const mobileMenu = document.createElement('div');
+  mobileMenu.className = 'mobile-menu';
   
-  return { article, body, meta };
-}
+  // 复制导航链接到移动端菜单
+  const navLinks = document.querySelector('.nav-links');
+  if (navLinks && mobileMenuBtn) {
+    mobileMenu.innerHTML = `
+      <nav class="nav-links">
+        <a href="#features" class="nav-link">功能</a>
+        <a href="#how-it-works" class="nav-link">工作原理</a>
+        <a href="#demo" class="nav-link">演示</a>
+        <a href="/chat" class="nav-link nav-cta">开始使用</a>
+      </nav>
+    `;
+    
+    document.body.appendChild(mobileMenu);
+    
+    mobileMenuBtn.addEventListener('click', function() {
+      mobileMenu.classList.toggle('open');
+      
+      // 切换按钮图标
+      const svg = this.querySelector('svg');
+      if (mobileMenu.classList.contains('open')) {
+        svg.innerHTML = '<path d="M18 6L6 18M6 6l12 12"></path>';
+      } else {
+        svg.innerHTML = '<path d="M3 12h18M3 6h18M3 18h18"></path>';
+      }
+    });
+    
+    // 点击链接后关闭菜单
+    mobileMenu.addEventListener('click', function(e) {
+      if (e.target.tagName === 'A') {
+        mobileMenu.classList.remove('open');
+        const svg = mobileMenuBtn.querySelector('svg');
+        svg.innerHTML = '<path d="M3 12h18M3 6h18M3 18h18"></path>';
+      }
+    });
+  }
 
-function updateMessageContent(body, content) {
-  body.innerHTML = renderMarkdown(content);
-  messages.scrollTop = messages.scrollHeight;
+  // 平滑滚动
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href');
+      const targetElement = document.querySelector(targetId);
+      
+      if (targetElement) {
+        const offsetTop = targetElement.offsetTop - 80; // 减去导航栏高度
+        
+        window.scrollTo({
+          top: offsetTop,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+
+  // 元素进入视口动画
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  // 观察需要动画的元素
+  document.querySelectorAll('.feature-card, .workflow-step, .demo-card').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+
+  // 按钮悬停效果
+  document.querySelectorAll('.btn, .nav-link').forEach(button => {
+    button.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-2px)';
+    });
+    
+    button.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  });
+
+  // 卡片悬停效果
+  document.querySelectorAll('.feature-card, .workflow-step, .demo-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-4px)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  });
+
+  // 功能徽章悬停效果
+  document.querySelectorAll('.feature-badge').forEach(badge => {
+    badge.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-2px)';
+    });
+    
+    badge.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  });
+
+  // 页脚链接悬停效果
+  document.querySelectorAll('.footer-link-group a').forEach(link => {
+    link.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateX(6px)';
+    });
+    
+    link.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateX(0)';
+    });
+  });
+
+  // 模拟聊天预览输入
+  const chatInput = document.querySelector('.chat-input input');
+  const sendBtn = document.querySelector('.send-btn');
   
-  if (typeof hljs !== "undefined") {
-    body.querySelectorAll('pre code').forEach((block) => {
-      hljs.highlightElement(block);
+  if (chatInput && sendBtn) {
+    chatInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const message = this.value.trim();
+        if (message) {
+          // 模拟发送消息
+          this.value = '';
+          
+          // 这里可以添加发送消息的动画效果
+          console.log('发送消息:', message);
+        }
+      }
+    });
+    
+    sendBtn.addEventListener('click', function() {
+      const message = chatInput.value.trim();
+      if (message) {
+        // 模拟发送消息
+        chatInput.value = '';
+        
+        // 这里可以添加发送消息的动画效果
+        console.log('发送消息:', message);
+      }
     });
   }
-}
 
-function createInitialAssistantMessage() {
-  createMessage(
-    "assistant",
-    "我已经接好多轮上下文、问题重写和证据展示。现在你可以连续追问，我会尽量结合上文理解\"他\"\"这个\"\"上述对象\"等指代。"
-  );
-}
-
-function clearMessages() {
-  messages.innerHTML = "";
-  createInitialAssistantMessage();
-}
-
-function setInteractiveState(disabled) {
-  isStreaming = disabled;
-  input.disabled = disabled;
-  submitButton.disabled = disabled;
-  debugMode.disabled = disabled;
-  newSessionButton.disabled = disabled;
-  suggestionButtons.forEach((button) => {
-    button.disabled = disabled;
-  });
-}
-
-function updateHealthBadge(provider, path, fileCount, ok = true) {
-  if (providerBadge) {
-    providerBadge.textContent = provider || "Unknown";
-  }
-  if (runtimeBadge) {
-    runtimeBadge.textContent = ok ? "Runtime Ready" : "Runtime Unavailable";
-  }
-  if (healthPath) {
-    if (ok) {
-      healthPath.textContent = `${path || "知识库路径不可用"} · 已发现 ${fileCount || 0} 个文件`;
-    } else {
-      healthPath.textContent = path || "知识库路径不可用";
-    }
-  }
-}
-
-function parseSseBlock(block) {
-  const dataLines = block
-    .split("\n")
-    .filter((line) => line.startsWith("data:"))
-    .map((line) => line.slice(5).trim());
-
-  if (!dataLines.length) {
-    return null;
+  // 加载动画
+  function showLoading(element) {
+    if (!element) return;
+    
+    const loading = document.createElement('div');
+    loading.className = 'loading';
+    loading.style.margin = '0 auto';
+    
+    element.appendChild(loading);
+    
+    return loading;
   }
 
-  return JSON.parse(dataLines.join("\n"));
-}
-
-function addNote(meta, text) {
-  const note = document.createElement("p");
-  note.className = "message-note";
-  note.textContent = text;
-  meta.appendChild(note);
-}
-
-function renderEvidence(meta, evidence) {
-  if (!Array.isArray(evidence) || !evidence.length) {
-    return;
-  }
-
-  const details = document.createElement("details");
-  details.className = "message-details";
-
-  const summary = document.createElement("summary");
-  summary.textContent = `参考证据 (${evidence.length})`;
-
-  const list = document.createElement("div");
-  list.className = "evidence-list";
-
-  evidence.forEach((item) => {
-    const block = document.createElement("div");
-    block.className = "evidence-item";
-
-    const head = document.createElement("div");
-    head.className = "evidence-head";
-
-    const sourceTag = document.createElement("span");
-    sourceTag.className = "evidence-tag";
-    sourceTag.textContent = item.source || "unknown";
-    head.appendChild(sourceTag);
-
-    if (item.sheet_name) {
-      const sheetTag = document.createElement("span");
-      sheetTag.className = "evidence-tag";
-      sheetTag.textContent = `sheet: ${item.sheet_name}`;
-      head.appendChild(sheetTag);
-    }
-
-    if (item.record_index) {
-      const rowTag = document.createElement("span");
-      rowTag.className = "evidence-tag";
-      rowTag.textContent = `row: ${item.record_index}`;
-      head.appendChild(rowTag);
-    }
-
-    if (Array.isArray(item.reasons) && item.reasons.length) {
-      const reasonTag = document.createElement("span");
-      reasonTag.className = "evidence-tag";
-      reasonTag.textContent = item.reasons.join(" + ");
-      head.appendChild(reasonTag);
-    }
-
-    const preview = document.createElement("p");
-    preview.className = "evidence-preview";
-    preview.textContent = item.preview || "";
-
-    block.append(head, preview);
-    list.appendChild(block);
-  });
-
-  details.append(summary, list);
-  meta.appendChild(details);
-}
-
-function renderDebug(meta, debug) {
-  if (!debugMode.checked || !debug) {
-    return;
-  }
-
-  const details = document.createElement("details");
-  details.className = "message-details";
-
-  const summary = document.createElement("summary");
-  summary.textContent = "调试信息";
-
-  const block = document.createElement("pre");
-  block.className = "debug-block";
-  block.textContent = JSON.stringify(debug, null, 2);
-
-  details.append(summary, block);
-  meta.appendChild(details);
-}
-
-function renderAssistantMeta(meta, payload) {
-  meta.innerHTML = "";
-
-  if (payload.rewritten_question && payload.rewritten_question !== payload.question) {
-    addNote(meta, `重写问题：${payload.rewritten_question}`);
-  }
-
-  if (Array.isArray(payload.entities) && payload.entities.length) {
-    addNote(meta, `会话实体：${payload.entities.join(" / ")}`);
-  }
-
-  if (payload.reloaded) {
-    addNote(meta, "本次回答前已自动重建知识库索引。");
-  }
-
-  renderEvidence(meta, payload.evidence);
-  renderDebug(meta, payload.debug);
-}
-
-async function loadHealth() {
-  try {
-    const response = await fetch("/api/health");
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.detail || "健康检查失败");
-    }
-    updateHealthBadge(data.provider, data.knowledge_path, data.knowledge_file_count, true);
-  } catch (error) {
-    updateHealthBadge("Unavailable", "请检查后端服务", 0, false);
-    statusText.textContent = "健康检查失败，请确认后端已启动。";
-  }
-}
-
-async function readStream(response, assistantMessage) {
-  if (!response.body) {
-    throw new Error("浏览器不支持流式响应。");
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-  let finalPayload = null;
-  let accumulatedContent = "";
-
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    buffer += decoder.decode(value, { stream: true });
-
-    while (buffer.includes("\n\n")) {
-      const boundary = buffer.indexOf("\n\n");
-      const block = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-
-      const payload = parseSseBlock(block);
-      if (!payload) {
-        continue;
-      }
-
-      if (payload.type === "start") {
-        statusText.textContent = payload.reloaded
-          ? `已连接 ${payload.provider}，检测到知识库变化，正在重建索引并生成回答...`
-          : `已连接 ${payload.provider}，开始生成回答...`;
-        continue;
-      }
-
-      if (payload.type === "token") {
-        accumulatedContent += payload.content;
-        updateMessageContent(assistantMessage.body, accumulatedContent);
-        continue;
-      }
-
-      if (payload.type === "end") {
-        finalPayload = payload;
-        statusText.textContent = payload.reloaded
-          ? `完成，本次由 ${payload.provider} 提供流式回答，且已自动重建知识库索引。`
-          : `完成，本次由 ${payload.provider} 提供流式回答。`;
-        continue;
-      }
-
-      if (payload.type === "error") {
-        throw new Error(payload.detail || "流式请求失败。");
-      }
+  // 移除加载动画
+  function hideLoading(loadingElement) {
+    if (loadingElement && loadingElement.parentNode) {
+      loadingElement.parentNode.removeChild(loadingElement);
     }
   }
 
-  if (!accumulatedContent.trim()) {
-    updateMessageContent(assistantMessage.body, "抱歉，这次没有收到模型输出。");
+  // 初始化页面
+  function initPage() {
+    console.log('TinyRag 页面初始化完成');
+    
+    // 这里可以添加其他初始化逻辑
   }
 
-  if (finalPayload) {
-    renderAssistantMeta(assistantMessage.meta, finalPayload);
-  }
-}
-
-async function submitQuestion(question) {
-  const cleanQuestion = question.trim();
-  if (!cleanQuestion || isStreaming) {
-    return;
-  }
-
-  createMessage("user", cleanQuestion);
-  const assistantMessage = createMessage("assistant", "");
-
-  statusText.textContent = "正在检索知识库并建立多轮会话连接...";
-  input.value = "";
-  setInteractiveState(true);
-
-  try {
-    const response = await fetch("/api/chat/stream", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        question: cleanQuestion,
-        session_id: currentSessionId,
-        debug: debugMode.checked,
-      }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.detail || "请求失败。");
-    }
-
-    await readStream(response, assistantMessage);
-  } catch (error) {
-    updateMessageContent(
-      assistantMessage.body,
-      assistantMessage.body.textContent || `当前请求失败：${error.message}`
-    );
-    statusText.textContent = "请求失败，请检查模型服务或环境变量配置。";
-  } finally {
-    setInteractiveState(false);
-    input.focus();
-  }
-}
-
-async function startNewSession() {
-  const previousSessionId = currentSessionId;
-  const nextSessionId = createSessionId();
-
-  try {
-    await fetch("/api/session/reset", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ session_id: previousSessionId }),
-    });
-  } catch (error) {
-  }
-
-  saveSessionId(nextSessionId);
-  clearMessages();
-  statusText.textContent = "已开始新会话。";
-}
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await submitQuestion(input.value);
+  // 调用初始化函数
+  initPage();
 });
 
-input.addEventListener("keydown", async (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    await submitQuestion(input.value);
-  }
+// 页面加载完成后执行
+window.addEventListener('load', function() {
+  console.log('页面加载完成');
+  
+  // 这里可以添加页面完全加载后的逻辑
 });
 
-suggestionButtons.forEach((button) => {
-  button.addEventListener("click", async () => {
-    input.value = button.dataset.question || "";
-    await submitQuestion(input.value);
-  });
+// 窗口大小变化时执行
+window.addEventListener('resize', function() {
+  console.log('窗口大小变化');
+  
+  // 这里可以添加响应式调整逻辑
 });
 
-debugMode.addEventListener("change", () => {
-  window.localStorage.setItem("tinyrag_debug_mode", debugMode.checked ? "1" : "0");
+// 滚动时执行
+window.addEventListener('scroll', function() {
+  // 这里可以添加滚动相关的逻辑
 });
-
-newSessionButton.addEventListener("click", async () => {
-  await startNewSession();
-});
-
-debugMode.checked = window.localStorage.getItem("tinyrag_debug_mode") === "1";
-loadHealth();

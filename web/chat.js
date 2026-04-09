@@ -70,6 +70,143 @@ function saveSessionId(sessionId) {
   window.localStorage.setItem("tinyrag_chat_session_id", sessionId);
 }
 
+function createCopyButton() {
+  const button = document.createElement("button");
+  button.className = "copy-button";
+  button.setAttribute("aria-label", "复制消息内容");
+  
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "14");
+  svg.setAttribute("height", "14");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "currentColor");
+  
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z");
+  
+  svg.appendChild(path);
+  button.appendChild(svg);
+  
+  const tooltip = document.createElement("div");
+  tooltip.className = "copy-tooltip";
+  tooltip.textContent = "复制";
+  button.appendChild(tooltip);
+  
+  return button;
+}
+
+function getMessageText(contentElement) {
+  if (!contentElement) return "";
+  
+  let text = "";
+  
+  // 处理不同类型的内容
+  const textNodes = contentElement.querySelectorAll('p, li, code, pre, blockquote');
+  if (textNodes.length > 0) {
+    textNodes.forEach(node => {
+      if (node.tagName === 'PRE') {
+        // 处理代码块
+        const code = node.querySelector('code');
+        if (code) {
+          text += code.textContent + '\n\n';
+        }
+      } else {
+        text += node.textContent + '\n';
+      }
+    });
+  } else {
+    // 处理纯文本内容
+    text = contentElement.textContent;
+  }
+  
+  return text.trim();
+}
+
+function copyToClipboard(text) {
+  if (!navigator.clipboard) {
+    // 回退方法
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      document.body.removeChild(textArea);
+      return false;
+    }
+  }
+  
+  return navigator.clipboard.writeText(text);
+}
+
+function setupCopyButton(button, contentElement) {
+  button.addEventListener("click", async () => {
+    const text = getMessageText(contentElement);
+    
+    if (!text) {
+      const tooltip = button.querySelector('.copy-tooltip');
+      if (tooltip) {
+        tooltip.textContent = "无内容可复制";
+        tooltip.classList.add("show");
+        setTimeout(() => {
+          tooltip.classList.remove("show");
+        }, 2000);
+      }
+      return;
+    }
+    
+    try {
+      const result = await copyToClipboard(text);
+      
+      if (result === false) {
+        throw new Error("复制失败");
+      }
+      
+      // 显示复制成功的状态
+      button.classList.add("copied");
+      
+      const tooltip = button.querySelector('.copy-tooltip');
+      if (tooltip) {
+        tooltip.textContent = "已复制";
+        tooltip.classList.add("show");
+      }
+      
+      // 恢复按钮状态
+      setTimeout(() => {
+        button.classList.remove("copied");
+        const tooltip = button.querySelector('.copy-tooltip');
+        if (tooltip) {
+          tooltip.classList.remove("show");
+          setTimeout(() => {
+            tooltip.textContent = "复制";
+          }, 300);
+        }
+      }, 2000);
+    } catch (error) {
+      console.error("复制失败:", error);
+      const tooltip = button.querySelector('.copy-tooltip');
+      if (tooltip) {
+        tooltip.textContent = "复制失败";
+        tooltip.classList.add("show");
+        setTimeout(() => {
+          tooltip.classList.remove("show");
+          setTimeout(() => {
+            tooltip.textContent = "复制";
+          }, 300);
+        }, 2000);
+      }
+    }
+  });
+}
+
 function createMessage(role, content) {
   const article = document.createElement("article");
   article.className = `message message-${role}`;
@@ -80,6 +217,14 @@ function createMessage(role, content) {
 
   const wrapper = document.createElement("div");
   wrapper.className = "message-wrapper";
+
+  // 创建消息操作栏
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  
+  // 创建复制按钮
+  const copyButton = createCopyButton();
+  actions.appendChild(copyButton);
 
   const roleText = document.createElement("p");
   roleText.className = "message-role";
@@ -98,7 +243,10 @@ function createMessage(role, content) {
   const meta = document.createElement("div");
   meta.className = "message-meta";
 
-  wrapper.append(roleText, body, meta);
+  // 设置复制按钮功能
+  setupCopyButton(copyButton, body);
+
+  wrapper.append(actions, roleText, body, meta);
   article.append(avatar, wrapper);
   messages.appendChild(article);
   messages.scrollTop = messages.scrollHeight;
@@ -134,6 +282,14 @@ function createInitialAssistantMessage() {
   const wrapper = document.createElement("div");
   wrapper.className = "message-wrapper";
 
+  // 创建消息操作栏
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  
+  // 创建复制按钮
+  const copyButton = createCopyButton();
+  actions.appendChild(copyButton);
+
   const roleText = document.createElement("p");
   roleText.className = "message-role";
   roleText.textContent = "Assistant";
@@ -145,7 +301,10 @@ function createInitialAssistantMessage() {
   const meta = document.createElement("div");
   meta.className = "message-meta";
 
-  wrapper.append(roleText, body, meta);
+  // 设置复制按钮功能
+  setupCopyButton(copyButton, body);
+
+  wrapper.append(actions, roleText, body, meta);
   article.append(avatar, wrapper);
   messages.appendChild(article);
 }
