@@ -207,6 +207,21 @@ function setupCopyButton(button, contentElement) {
   });
 }
 
+function createLoadingIndicator() {
+  const loading = document.createElement("div");
+  loading.className = "loading-indicator";
+  
+  const spinner = document.createElement("div");
+  spinner.className = "loading-spinner";
+  
+  const text = document.createElement("span");
+  text.className = "loading-text";
+  text.textContent = "正在查找索引...";
+  
+  loading.append(spinner, text);
+  return loading;
+}
+
 function createMessage(role, content) {
   const article = document.createElement("article");
   article.className = `message message-${role}`;
@@ -238,6 +253,9 @@ function createMessage(role, content) {
     } else {
       body.textContent = content;
     }
+  } else if (role === "assistant") {
+    // 添加加载指示器
+    body.appendChild(createLoadingIndicator());
   }
 
   const meta = document.createElement("div");
