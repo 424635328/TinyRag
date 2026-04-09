@@ -632,11 +632,11 @@ body {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-xl);
   padding: 2rem;
+  padding-top: 2.5rem;
   transition: all var(--transition-slow);
   position: relative;
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(10px);
-  overflow: hidden;
   max-width: 300px;
 }
 
@@ -673,10 +673,10 @@ body {
 
 .step-number {
   position: absolute;
-  top: -16px;
+  top: -12px;
   left: 2rem;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: var(--text-light);
   border-radius: 50%;
